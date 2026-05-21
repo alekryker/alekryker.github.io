@@ -274,6 +274,16 @@ const LIFF_URL = "https://liff.line.me/" + LIFF_ID;
 let liffInitError = null;
 let liffInitPromise = null;
 
+function getCachedLineIdentity() {
+  const decoded = window.liff && liff.getDecodedIDToken ? liff.getDecodedIDToken() : null;
+  if (!decoded) return null;
+
+  return {
+    displayName: decoded.name || decoded.display_name || "",
+    userId: decoded.sub || ""
+  };
+}
+
 function withTimeout(promise, timeoutMs, message) {
   return Promise.race([
     promise,
@@ -302,7 +312,15 @@ async function initLiff() {
       throw new Error("กำลังพาไปล็อกอิน LINE");
     }
 
-    lineProfile = await readLineProfile();
+    lineProfile = getCachedLineIdentity() || null;
+    readLineProfile()
+      .then((profile) => {
+        lineProfile = profile;
+      })
+      .catch((error) => {
+        console.warn("LINE profile refresh failed", error);
+      });
+
     return lineProfile;
   } catch (error) {
     liffReady = false;
@@ -313,17 +331,19 @@ async function initLiff() {
 }
 
 async function readLineProfile() {
+  const cachedIdentity = getCachedLineIdentity();
+  if (cachedIdentity && cachedIdentity.displayName) {
+    return cachedIdentity;
+  }
+
   try {
     return await withTimeout(
       liff.getProfile(),
-      8000,
+      3000,
       "อ่านชื่อ LINE นานเกินไป กรุณาปิดแล้วเปิดผ่าน LIFF URL อีกครั้ง"
     );
   } catch (error) {
-    const decoded = liff.getDecodedIDToken ? liff.getDecodedIDToken() : null;
-    if (decoded && decoded.name) {
-      return { displayName: decoded.name };
-    }
+    if (cachedIdentity) return cachedIdentity;
     throw error;
   }
 }
@@ -558,8 +578,8 @@ function closeLiffWindow() {
 }
 
 async function getLineUserId() {
-  const profile = lineProfile || await getLineProfile();
-  return profile.userId || "";
+  const profile = lineProfile || getCachedLineIdentity();
+  return profile ? profile.userId || "" : "";
 }
 
 async function getLineProfile() {
@@ -588,7 +608,8 @@ async function getLineDisplayName() {
     throw new Error("กรุณาเปิดผ่าน LIFF URL และล็อกอินก่อนจอง: " + LIFF_URL);
   }
 
-  const profile = await getLineProfile();
+  const profile = lineProfile || await readLineProfile();
+  lineProfile = profile;
 
   if (!profile || !profile.displayName) {
     throw new Error("ไม่สามารถอ่านชื่อ LINE ได้ กรุณาเปิดสิทธิ์ Profile ใน LIFF");
@@ -739,10 +760,8 @@ else if(cls === "big"){
   });
 
   let lineName;
-  let lineUserId;
   try {
     lineName = await getLineDisplayName();
-    lineUserId = await getLineUserId();
     Swal.close();
   } catch (error) {
     Swal.fire({
@@ -812,8 +831,7 @@ Swal.fire({
           slay: data.slay,
           phone: data.phone,
           date: date,
-          table: selectedTable,
-          lineUserId: lineUserId
+          table: selectedTable
         }
       }).then(async function(res){
 
