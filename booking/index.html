@@ -342,7 +342,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 </script>
-<script>const APP_VERSION = "github-booking-v3-flex-token-20260521-2124";</script>
+<script>const APP_VERSION = "github-booking-v4-liff-fallback-20260521-2129";</script>
 </head>
 <body>
 
@@ -806,7 +806,7 @@ Swal.fire({
           table: selectedTable,
           lineUserId: lineUserId
         }
-      }).then(function(res){
+      }).then(async function(res){
 
         if(res.status === "taken"){
           Swal.fire({
@@ -817,11 +817,27 @@ Swal.fire({
           return;
         }
 
-        const flexResult = res.linePush || { sent: false };
+        let flexResult = res.linePush || { sent: false };
+
+        if (!flexResult.sent && res.flexMessage) {
+          const liffResult = await sendReservationFlex(res.flexMessage);
+          if (liffResult.sent) {
+            flexResult = {
+              sent: true,
+              via: "liff"
+            };
+          } else {
+            flexResult.liffMessage = liffResult.message;
+          }
+        }
 
         const flexNotice = flexResult.sent
           ? "ส่ง Flex กลับ LINE แล้ว"
           : "บันทึกจองแล้ว แต่ส่ง Flex ไม่สำเร็จ";
+
+        const flexDetail = !flexResult.sent
+          ? `<br><small style="color:#888">LINE status: ${flexResult.status || "-"}<br>${escapeHtmlAttr(flexResult.message || flexResult.liffMessage || "ไม่ทราบสาเหตุ")}</small>`
+          : "";
 
         Swal.fire({
           icon: flexResult.sent ? "success" : "warning",
@@ -831,7 +847,7 @@ Swal.fire({
               วันที่จอง: <b>${date}</b><br>
               หมายเลขโต๊ะ: <b>${selectedTable}</b><br>
               คุณ: <b>${data.name}</b><br><br>
-              <b>${flexNotice}</b><br><br>
+              <b>${flexNotice}</b>${flexDetail}<br><br>
               <b>แสดงหน้านี้กับพนักงานเพื่อรับโต๊ะ</b>
             </div>
           `
