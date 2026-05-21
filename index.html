@@ -748,99 +748,104 @@ else if(cls === "big"){
 
 Swal.fire({
   title: `จองโต๊ะ ${id}`,
-  showCloseButton: true,   // ✅ ปุ่ม X มุมขวา
-  showCancelButton: true,  // ✅ ปุ่มยกเลิก
-  cancelButtonText: "ปิด",
-  cancelButtonColor: "#999",
-
+  showCloseButton: true,
+  showConfirmButton: false,
   html: `
     <input id="swal-name" class="swal2-input" value="${escapeHtmlAttr(lineName)}" placeholder="ชื่อผู้จอง**">
     <input id="swal-slay" class="swal2-input" placeholder="จำนวนคน**" type="number">
     <input id="swal-phone" class="swal2-input" placeholder="เบอร์โทร">
+    <div id="booking-error" style="min-height:20px;color:#d32f2f;font-size:14px;margin:8px 0;"></div>
+    <div style="display:flex;justify-content:center;gap:12px;margin-top:18px;">
+      <button id="booking-confirm" type="button" style="padding:12px 22px;border-radius:8px;color:#fff;font-size:16px;font-weight:700;">ยืนยันการจอง</button>
+      <button id="booking-close" type="button" style="padding:12px 22px;border-radius:8px;background:#999;color:#fff;font-size:16px;font-weight:700;border:0;">ปิด</button>
+    </div>
   `,
-  confirmButtonText: "🔥 ยืนยันการจอง",
-  confirmButtonColor: "#8b0000",
-  focusConfirm: false,
-  showLoaderOnConfirm: false,
-  preConfirm: () => {
-    const name = document.getElementById('swal-name').value.trim();
-    const slay = document.getElementById('swal-slay').value;
-    const phone = document.getElementById('swal-phone').value;
-
-    if (!name || !slay || !phone) {
-      Swal.showValidationMessage("กรุณากรอกชื่อ จำนวนคน และเบอร์โทร");
-      return false;
-    }
-
-    return { name, slay, phone };
-  }
-  }).then(async (result) => {
-
-    if (!result.isConfirmed) return;
-
-    const data = result.value;
-    Swal.close();
-    await new Promise(resolve => setTimeout(resolve, 80));
-
-    Swal.fire({
-  title: "กำลังจอง...",
-  allowOutsideClick: false,
   didOpen: () => {
-    Swal.showLoading();
-  }
-});
+    const confirmButton = document.getElementById("booking-confirm");
+    const closeButton = document.getElementById("booking-close");
+    const errorBox = document.getElementById("booking-error");
 
-    apiPost("saveReservation", {
-      data: {
-        name: data.name,
-        slay: data.slay,
-        phone: data.phone,
-        date: date,
-        table: selectedTable,
-        lineUserId: lineUserId
-      }
-    }).then(function(res){
+    closeButton.addEventListener("click", () => Swal.close());
 
-      if(res.status === "taken"){
-        Swal.fire({
-          icon:"error",
-          title:"โต๊ะถูกจองแล้ว"
-        });
-        loadBooked();
+    confirmButton.addEventListener("click", async () => {
+      const data = {
+        name: document.getElementById("swal-name").value.trim(),
+        slay: document.getElementById("swal-slay").value,
+        phone: document.getElementById("swal-phone").value
+      };
+
+      if (!data.name || !data.slay || !data.phone) {
+        errorBox.textContent = "กรุณากรอกชื่อ จำนวนคน และเบอร์โทร";
         return;
       }
 
-      const flexResult = res.linePush || { sent: false };
+      confirmButton.disabled = true;
+      closeButton.disabled = true;
+      errorBox.textContent = "";
+      Swal.close();
+      await new Promise(resolve => setTimeout(resolve, 80));
 
-      const flexNotice = flexResult.sent
-        ? "ส่ง Flex กลับ LINE แล้ว"
-        : "บันทึกจองแล้ว แต่ส่ง Flex ไม่สำเร็จ";
-
-Swal.fire({
-  icon: flexResult.sent ? "success" : "warning",
-  title:"จองสำเร็จ 🎉",
-  html: `
-    <div style="font-size:16px">
-      วันที่จอง: <b>${date}</b><br>
-      หมายเลขโต๊ะ: <b>${selectedTable}</b><br>
-      คุณ: <b>${data.name}</b><br><br>
-      <b>${flexNotice}</b><br><br>
-      <b>แสดงหน้านี้กับพนักงานเพื่อรับโต๊ะ</b>
-    </div>
-  `
-});
-
-      loadBooked();
-
-    }).catch(function(error){
       Swal.fire({
-        icon:"error",
-        title:"จองไม่สำเร็จ",
-        text:error.message
+        title: "กำลังจอง...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      apiPost("saveReservation", {
+        data: {
+          name: data.name,
+          slay: data.slay,
+          phone: data.phone,
+          date: date,
+          table: selectedTable,
+          lineUserId: lineUserId
+        }
+      }).then(function(res){
+
+        if(res.status === "taken"){
+          Swal.fire({
+            icon:"error",
+            title:"โต๊ะถูกจองแล้ว"
+          });
+          loadBooked();
+          return;
+        }
+
+        const flexResult = res.linePush || { sent: false };
+
+        const flexNotice = flexResult.sent
+          ? "ส่ง Flex กลับ LINE แล้ว"
+          : "บันทึกจองแล้ว แต่ส่ง Flex ไม่สำเร็จ";
+
+        Swal.fire({
+          icon: flexResult.sent ? "success" : "warning",
+          title:"จองสำเร็จ 🎉",
+          html: `
+            <div style="font-size:16px">
+              วันที่จอง: <b>${date}</b><br>
+              หมายเลขโต๊ะ: <b>${selectedTable}</b><br>
+              คุณ: <b>${data.name}</b><br><br>
+              <b>${flexNotice}</b><br><br>
+              <b>แสดงหน้านี้กับพนักงานเพื่อรับโต๊ะ</b>
+            </div>
+          `
+        });
+
+        loadBooked();
+
+      }).catch(function(error){
+        Swal.fire({
+          icon:"error",
+          title:"จองไม่สำเร็จ",
+          text:error.message
+        });
       });
     });
+  }
 
-  });
+});
 
 });
 
