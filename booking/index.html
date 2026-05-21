@@ -497,7 +497,7 @@ stroke-linecap="round"/>
 
 async function apiPost(action, payload = {}) {
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwV1l93kF4_DuzzlMIXFJN0r5G1BC5Qf4iw7jb4Nbou5KaxNLZ_pAUxgqnmgQYuDVPPCw/exec";
-  const result = await jsonpRequest(APPS_SCRIPT_URL, {
+  const result = await jsonpRequestWithRetry(APPS_SCRIPT_URL, {
     action,
     ...payload
   });
@@ -509,6 +509,26 @@ async function apiPost(action, payload = {}) {
   return result;
 }
 
+async function jsonpRequestWithRetry(url, params, attempts = 3) {
+  let lastError;
+
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await jsonpRequest(url, {
+        ...params,
+        _t: Date.now() + "_" + i
+      });
+    } catch (error) {
+      lastError = error;
+      if (i < attempts - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500 + i * 700));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 function jsonpRequest(url, params) {
   return new Promise((resolve, reject) => {
     const callbackName = "slayCallback_" + Date.now() + "_" + Math.random().toString(36).slice(2);
@@ -516,7 +536,7 @@ function jsonpRequest(url, params) {
     const timeout = setTimeout(() => {
       cleanup();
       reject(new Error("เชื่อมต่อระบบจองนานเกินไป กรุณาลองใหม่"));
-    }, 20000);
+    }, 12000);
 
     function cleanup() {
       clearTimeout(timeout);
@@ -814,6 +834,7 @@ Swal.fire({
       confirmButton.disabled = true;
       closeButton.disabled = true;
       errorBox.textContent = "";
+      const bookingId = "booking_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       Swal.close();
       await new Promise(resolve => setTimeout(resolve, 80));
 
@@ -831,7 +852,8 @@ Swal.fire({
           slay: data.slay,
           phone: data.phone,
           date: date,
-          table: selectedTable
+          table: selectedTable,
+          bookingId: bookingId
         }
       }).then(async function(res){
 
