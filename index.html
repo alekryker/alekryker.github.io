@@ -6,7 +6,6 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<script>const APP_VERSION = "github-booking-v2-20260521-2117";</script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -343,6 +342,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 </script>
+<script>const APP_VERSION = "github-booking-v3-flex-token-20260521-2124";</script>
 </head>
 <body>
 
@@ -476,7 +476,7 @@ stroke-linecap="round"/>
 <script>
 
 async function apiPost(action, payload = {}) {
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTpCo_gwgPEfWSsTHoSLGM-bWe8OfgZIqr9-p3E5eBn_Zp2JvIjjbVmTDP9ycXFMsx3A/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwV1l93kF4_DuzzlMIXFJN0r5G1BC5Qf4iw7jb4Nbou5KaxNLZ_pAUxgqnmgQYuDVPPCw/exec";
   const result = await jsonpRequest(APPS_SCRIPT_URL, {
     action,
     ...payload
