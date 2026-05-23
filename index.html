@@ -271,6 +271,8 @@ let liffReady = false;
 let lineProfile = null;
 const LIFF_ID = "2009168820-FDQ4rPc8";
 const LIFF_URL = "https://liff.line.me/" + LIFF_ID;
+const OA_ID = "slay.th";
+const OA_ADD_URL = "https://line.me/R/ti/p/@" + OA_ID;
 let liffInitError = null;
 let liffInitPromise = null;
 
@@ -312,6 +314,9 @@ async function initLiff() {
       throw new Error("กำลังพาไปล็อกอิน LINE");
     }
 
+    await requireLineClient();
+    await requireOAFriendship();
+
     lineProfile = getCachedLineIdentity() || null;
     readLineProfile()
       .then((profile) => {
@@ -328,6 +333,62 @@ async function initLiff() {
     console.error("LIFF init failed", error);
     throw error;
   }
+}
+
+async function requireLineClient() {
+  if (liff.isInClient()) return;
+
+  window.location.replace(LIFF_URL);
+  throw new Error("กำลังเปิดหน้าในแอป LINE");
+}
+
+function openOAFriendPage() {
+  if (window.liff && liffReady && liff.isInClient() && liff.openWindow) {
+    liff.openWindow({
+      url: OA_ADD_URL,
+      external: false
+    });
+    return;
+  }
+
+  window.location.href = OA_ADD_URL;
+}
+
+async function showAddFriendRequired() {
+  if (!window.Swal) {
+    openOAFriendPage();
+    return;
+  }
+
+  await Swal.fire({
+    title: "กรุณาแอด LINE OA ก่อนจอง",
+    html: `ต้องเป็นเพื่อนกับ <b>@${OA_ID}</b> ก่อนใช้งานหน้านี้`,
+    icon: "info",
+    confirmButtonText: "แอดเพื่อน @slay.th",
+    confirmButtonColor: "#8b0000",
+    allowOutsideClick: false,
+    allowEscapeKey: false
+  });
+
+  openOAFriendPage();
+}
+
+async function requireOAFriendship() {
+  if (!liff.getFriendship) {
+    await showAddFriendRequired();
+    throw new Error("LIFF นี้ยังตรวจสอบสถานะเพื่อน OA ไม่ได้");
+  }
+
+  const friendship = await withTimeout(
+    liff.getFriendship(),
+    5000,
+    "ตรวจสอบสถานะเพื่อน LINE OA นานเกินไป กรุณาปิดแล้วเปิดใหม่อีกครั้ง"
+  );
+
+  if (friendship && friendship.friendFlag) return;
+
+  await showAddFriendRequired();
+  throw new Error("กรุณาแอด LINE OA @slay.th ก่อนใช้งาน");
 }
 
 async function readLineProfile() {
@@ -351,7 +412,9 @@ async function readLineProfile() {
 function ensureLiffInit() {
   if (!liffInitPromise) {
     liffInitPromise = initLiff();
-    liffInitPromise.catch(() => {});
+    liffInitPromise.catch(() => {
+      liffInitPromise = null;
+    });
   }
 
   return liffInitPromise;
@@ -362,7 +425,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 </script>
-<script>const APP_VERSION = "github-booking-v4-liff-fallback-20260521-2129";</script>
+<script>const APP_VERSION = "github-booking-v5-force-oa-friend-20260523";</script>
 </head>
 <body>
 
