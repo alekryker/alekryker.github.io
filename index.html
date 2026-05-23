@@ -314,8 +314,8 @@ async function initLiff() {
       throw new Error("กำลังพาไปล็อกอิน LINE");
     }
 
-    await requireLineClient();
     await requireOAFriendship();
+    await requireLineClient();
 
     lineProfile = getCachedLineIdentity() || null;
     readLineProfile()
