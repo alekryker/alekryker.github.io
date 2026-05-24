@@ -273,11 +273,18 @@ const LIFF_ID = "2009168820-FDQ4rPc8";
 const LIFF_URL = "https://liff.line.me/" + LIFF_ID;
 const OA_ID = "637fiery";
 const OA_ADD_URL = "https://line.me/R/ti/p/@" + OA_ID;
+const LIFF_LOGIN_MESSAGE = "กำลังพาไปล็อกอิน LINE";
+const LIFF_OPEN_MESSAGE = "กำลังเปิดหน้าในแอป LINE";
 let liffInitError = null;
 let liffInitPromise = null;
 
 function getLiffRedirectUrl() {
-  return window.location.href.split("#")[0];
+  return LIFF_URL;
+}
+
+function isLiffNavigationError(error) {
+  const message = error && error.message ? error.message : "";
+  return message.includes(LIFF_LOGIN_MESSAGE) || message.includes(LIFF_OPEN_MESSAGE);
 }
 
 function getCachedLineIdentity() {
@@ -317,7 +324,7 @@ async function initLiff() {
 
     if (!liff.isLoggedIn()) {
       liff.login({ redirectUri: getLiffRedirectUrl() });
-      throw new Error("กำลังพาไปล็อกอิน LINE");
+      throw new Error(LIFF_LOGIN_MESSAGE);
     }
 
     await requireLineClient();
@@ -345,7 +352,7 @@ async function requireLineClient() {
   if (liff.isInClient()) return;
 
   window.location.replace(LIFF_URL);
-  throw new Error("กำลังเปิดหน้าในแอป LINE");
+  throw new Error(LIFF_OPEN_MESSAGE);
 }
 
 function openOAFriendPage() {
@@ -692,7 +699,7 @@ async function getLineDisplayName() {
     await ensureLiffInit();
   } catch (error) {
     if (liffInitError && /login/i.test(liffInitError.message || "")) {
-      throw new Error("กำลังพาไปล็อกอิน LINE กรุณาลองอีกครั้งหลังกลับมาหน้านี้");
+      throw new Error(LIFF_LOGIN_MESSAGE);
     }
     throw new Error((liffInitError && liffInitError.message) || error.message || "เชื่อมต่อ LINE LIFF ไม่สำเร็จ");
   }
@@ -857,6 +864,11 @@ else if(cls === "big"){
     lineName = await getLineDisplayName();
     Swal.close();
   } catch (error) {
+    if (isLiffNavigationError(error)) {
+      Swal.close();
+      return;
+    }
+
     Swal.fire({
       icon: "warning",
       title: "อ่านชื่อ LINE ไม่สำเร็จ",
