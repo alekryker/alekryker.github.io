@@ -864,23 +864,9 @@ else if(cls === "big"){
     lineName = await getLineDisplayName();
     Swal.close();
   } catch (error) {
-    if (isLiffNavigationError(error)) {
-      Swal.close();
-      return;
-    }
-
-    Swal.fire({
-      icon: "warning",
-      title: "อ่านชื่อ LINE ไม่สำเร็จ",
-      html: `
-        <div style="font-size:15px;line-height:1.6">
-          ${error.message}<br><br>
-          <a href="${LIFF_URL}" style="color:#8b0000;font-weight:700">เปิดผ่าน LINE LIFF</a>
-        </div>
-      `,
-      confirmButtonColor: "#8b0000"
-    });
-    return;
+    console.warn("LINE profile unavailable, continuing with manual name", error);
+    lineName = "";
+    Swal.close();
   }
 
 Swal.fire({
