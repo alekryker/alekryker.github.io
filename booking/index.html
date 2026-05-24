@@ -271,7 +271,7 @@ let liffReady = false;
 let lineProfile = null;
 const LIFF_ID = "2009168820-FDQ4rPc8";
 const LIFF_URL = "https://liff.line.me/" + LIFF_ID;
-const OA_ID = "slay.th";
+const OA_ID = "637fiery";
 const OA_ADD_URL = "https://line.me/R/ti/p/@" + OA_ID;
 let liffInitError = null;
 let liffInitPromise = null;
@@ -314,8 +314,8 @@ async function initLiff() {
       throw new Error("กำลังพาไปล็อกอิน LINE");
     }
 
-    await requireOAFriendship();
     await requireLineClient();
+    await requireOAFriendship();
 
     lineProfile = getCachedLineIdentity() || null;
     readLineProfile()
@@ -364,7 +364,7 @@ async function showAddFriendRequired() {
     title: "กรุณาแอด LINE OA ก่อนจอง",
     html: `ต้องเป็นเพื่อนกับ <b>@${OA_ID}</b> ก่อนใช้งานหน้านี้`,
     icon: "info",
-    confirmButtonText: "แอดเพื่อน @slay.th",
+    confirmButtonText: "แอดเพื่อน @" + OA_ID,
     confirmButtonColor: "#8b0000",
     allowOutsideClick: false,
     allowEscapeKey: false
@@ -388,7 +388,7 @@ async function requireOAFriendship() {
   if (friendship && friendship.friendFlag) return;
 
   await showAddFriendRequired();
-  throw new Error("กรุณาแอด LINE OA @slay.th ก่อนใช้งาน");
+  throw new Error("กรุณาแอด LINE OA @" + OA_ID + " ก่อนใช้งาน");
 }
 
 async function readLineProfile() {
@@ -400,7 +400,7 @@ async function readLineProfile() {
   try {
     return await withTimeout(
       liff.getProfile(),
-      3000,
+      8000,
       "อ่านชื่อ LINE นานเกินไป กรุณาปิดแล้วเปิดผ่าน LIFF URL อีกครั้ง"
     );
   } catch (error) {
