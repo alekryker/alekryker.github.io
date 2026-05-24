@@ -276,6 +276,10 @@ const OA_ADD_URL = "https://line.me/R/ti/p/@" + OA_ID;
 let liffInitError = null;
 let liffInitPromise = null;
 
+function getLiffRedirectUrl() {
+  return window.location.href.split("#")[0];
+}
+
 function getCachedLineIdentity() {
   const decoded = window.liff && liff.getDecodedIDToken ? liff.getDecodedIDToken() : null;
   if (!decoded) return null;
@@ -300,6 +304,8 @@ async function initLiff() {
     throw new Error("ไม่พบ LINE LIFF SDK");
   }
 
+  liffInitError = null;
+
   try {
     await withTimeout(
       liff.init({ liffId: LIFF_ID }),
@@ -310,7 +316,7 @@ async function initLiff() {
     liffReady = true;
 
     if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: LIFF_URL });
+      liff.login({ redirectUri: getLiffRedirectUrl() });
       throw new Error("กำลังพาไปล็อกอิน LINE");
     }
 
@@ -412,9 +418,13 @@ async function readLineProfile() {
 function ensureLiffInit() {
   if (!liffInitPromise) {
     liffInitPromise = initLiff();
-    liffInitPromise.catch(() => {
-      liffInitPromise = null;
-    });
+    liffInitPromise
+      .then(() => {
+        liffInitError = null;
+      })
+      .catch(() => {
+        liffInitPromise = null;
+      });
   }
 
   return liffInitPromise;
