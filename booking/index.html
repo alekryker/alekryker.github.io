@@ -341,7 +341,9 @@ async function initLiff() {
 
     return lineProfile;
   } catch (error) {
-    liffReady = false;
+    if (!liffReady) {
+      liffReady = false;
+    }
     liffInitError = error;
     console.error("LIFF init failed", error);
     throw error;
@@ -650,10 +652,21 @@ function jsonpRequest(url, params) {
 }
 
 async function sendReservationFlex(flexMessage) {
+  if (!liffReady && window.liff) {
+    try {
+      await ensureLiffInit();
+    } catch (error) {
+      console.warn("LIFF init before Flex send failed", error);
+    }
+  }
+
   if (!liffReady || !window.liff || !liff.isInClient() || !flexMessage) {
+    const inClient = window.liff && liff.isInClient ? liff.isInClient() : false;
+    const loggedIn = window.liff && liff.isLoggedIn ? liff.isLoggedIn() : false;
     return {
       sent: false,
-      message: "Flex จะส่งกลับได้เมื่อเปิดผ่าน LIFF URL: " + LIFF_URL
+      status: "liff_not_ready",
+      message: "LIFF ready=" + liffReady + ", inClient=" + inClient + ", loggedIn=" + loggedIn
     };
   }
 
