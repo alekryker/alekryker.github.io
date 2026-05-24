@@ -678,7 +678,17 @@ function closeLiffWindow() {
 }
 
 async function getLineUserId() {
-  const profile = lineProfile || getCachedLineIdentity();
+  let profile = lineProfile || getCachedLineIdentity();
+
+  if (!profile && liffReady && window.liff && liff.isLoggedIn()) {
+    try {
+      profile = await readLineProfile();
+      lineProfile = profile;
+    } catch (error) {
+      console.warn("LINE user id unavailable", error);
+    }
+  }
+
   return profile ? profile.userId || "" : "";
 }
 
@@ -906,6 +916,7 @@ Swal.fire({
       closeButton.disabled = true;
       errorBox.textContent = "";
       const bookingId = "booking_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const lineUserId = await getLineUserId();
       Swal.close();
       await new Promise(resolve => setTimeout(resolve, 80));
 
@@ -924,7 +935,8 @@ Swal.fire({
           phone: data.phone,
           date: date,
           table: selectedTable,
-          bookingId: bookingId
+          bookingId: bookingId,
+          lineUserId: lineUserId
         }
       }).then(async function(res){
 
