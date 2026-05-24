@@ -962,22 +962,10 @@ Swal.fire({
           return;
         }
 
-        let flexResult = res.linePush || { sent: false };
-
-        if (!flexResult.sent && res.flexMessage) {
-          const liffResult = await sendReservationFlex(res.flexMessage);
-          if (liffResult.sent) {
-            flexResult = {
-              sent: true,
-              via: "liff"
-            };
-          } else {
-            flexResult.liffMessage = liffResult.message;
-          }
-        }
+        const flexResult = await sendReservationFlex(res.flexMessage);
 
         const flexDetail = !flexResult.sent
-          ? `<br><small style="color:#888">LINE status: ${flexResult.status || "-"}<br>${escapeHtmlAttr(flexResult.message || flexResult.liffMessage || "ไม่ทราบสาเหตุ")}</small>`
+          ? `<br><small style="color:#888">LINE status: ${flexResult.status || "-"}<br>${escapeHtmlAttr(flexResult.message || "ไม่ทราบสาเหตุ")}</small>`
           : "";
 
         loadBooked();
